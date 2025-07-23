@@ -32,15 +32,26 @@ resource "aws_security_group_rule" "eks_nodes_ingress_self" {
   description       = "Allow nodes to communicate with each other."
 }
 
-  # Ingress Rule: Allow HTTPS from cluster to nodes
+
 resource "aws_security_group_rule" "eks_nodes_ingress_cluster_https" {
   type                     = "ingress"
   from_port                = 443
   to_port                  = 443
   protocol                 = "tcp"
-  cidr_blocks              = ["10.0.0.0/16"]
+  source_security_group_id = module.eks.cluster_security_group_id
   security_group_id        = aws_security_group.eks_nodes_sg.id
   description              = "Allow EKS control plane to communicate with node webhooks (e.g., ALB/NLB webhook)."
+}
+
+# 명시적 추가 제안
+resource "aws_security_group_rule" "eks_nodes_ingress_webhook_443" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  self              = true
+  security_group_id = aws_security_group.eks_nodes_sg.id
+  description       = "Allow node-to-node webhook traffic over 443"
 }
 
 # Ingress Rule: Allow Kubelet API from cluster to nodes
