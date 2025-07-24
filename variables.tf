@@ -9,13 +9,6 @@ variable "eks_cluster_version" {
   type        = string
 }
 
-
-
-variable "bastion_cidr" {
-  description = "Bastion host CIDR"
-  type        = string
-}
-
 variable "aws_load_balancer_controller_chart_version" {
   description = "AWS Load Balancer Controller Helm 차트 버전"
   type        = string
@@ -31,8 +24,22 @@ variable "ingress_nginx_chart_version" {
   type        = string
 }
 
-variable "domain" {
-  description = "도메인"
+variable "bastion_cidr" {
+  description = "Bastion host CIDR"
   type        = string
 }
 
+variable "karpenter_chart_version" {
+  description = "Karpenter Helm 차트 버전"
+  type        = string
+}
+
+variable "gitlab_chart_version" {
+  description = "GitLab Helm 차트 버전 "
+  type        = string
+}
+
+variable "argocd_chart_version" {
+  description = "ArgoCD Helm 차트 버전 "
+  type        = string
+}

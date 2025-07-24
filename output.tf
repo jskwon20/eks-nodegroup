@@ -14,6 +14,11 @@ output "ssh_connection" {
   description = "SSH 연결 명령어"
 }
 
+output "docker_status_command" {
+  value       = "ssh -i jskwon-test-key ubuntu@${aws_instance.jskwon_bastion_ec2.public_ip} 'docker ps'"
+  description = "Docker 컨테이너 상태 확인 명령어"
+}
+
 output "eks_cluster_name" {
   value       = module.eks.cluster_name
   description = "EKS 클러스터 이름"
@@ -34,12 +39,31 @@ output "docker_logs_command" {
   description = "VSCode 서버 로그 확인 명령어"
 }
 
-
+output "hosted_zone_name_servers" {
+  value = data.aws_route53_zone.this.name_servers
+}
 
 output "update_kubeconfig" {
   value = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${data.aws_region.current.name}"
 }
 
-output "hosted_zone_name_servers" {
-  value = data.aws_route53_zone.this.name_servers
+output "gitlab_url" {
+  value = data.kubernetes_ingress_v1.gitlab.spec.0.rule.0.host
+}
+
+output "gitlab_password" {
+  value     = data.kubernetes_secret_v1.gitlab.data["password"]
+  sensitive = true
+}
+
+output "ecr_repository_url" {
+  value = module.ecr.repository_url
+}
+
+output "domain" {
+  value = data.aws_route53_zone.this.name
+}
+
+output "argocd_url" {
+  value = data.kubernetes_ingress_v1.argocd.spec.0.rule.0.host
 }
