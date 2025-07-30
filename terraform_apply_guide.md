@@ -25,13 +25,7 @@ VPC, 서브넷, 라우팅 테이블, NAT Gateway 등 기본적인 네트워크 �
 
 ```bash
 terraform apply --auto-approve \
-  --target=module.vpc \
-  --target=aws_security_group.jskwon_bastion_sg \
-  --target=aws_instance.jskwon_bastion_ec2 \
-  --target=aws_key_pair.jskwon \
-  --target=local_file.private_key \
-  --target=random_password.vscode_password \
-  --target=tls_private_key.jskwon_key
+  --target=module.vpc
 ```
 
 ---
@@ -41,18 +35,22 @@ terraform apply --auto-approve \
 EKS 컨트롤 플레인, 관리형 노드 그룹, 그리고 사용자 접근을 위한 IAM 역할 및 정책, 노드 그룹 보안 그룹 규칙을 생성합니다. `module.eks`가 클러스터와 노드 그룹의 대부분을 관리하며, 나머지 IAM 및 보안 그룹 규칙은 명시적으로 타겟팅합니다.
 
 ```bash
-t terraform apply --auto-approve \
+terraform apply --auto-approve \
   --target=module.eks \
-  --target=aws_iam_role.eks_admin_role \
-  --target=aws_iam_instance_profile.eks_admin_profile \
-  --target=aws_iam_role_policy_attachment.eks_admin_access \
   --target=aws_security_group_rule.eks_nodes_egress_all \
   --target=aws_security_group_rule.eks_nodes_ingress_self \
   --target=aws_security_group_rule.eks_nodes_ingress_bastion_ssh \
   --target=aws_security_group_rule.eks_nodes_ingress_cluster_https \
   --target=aws_security_group_rule.eks_nodes_ingress_cluster_kubelet \
-  --target=aws_security_group_rule.cluster_ingress_from_nodes
+  --target=aws_security_group_rule.cluster_ingress_from_nodes \
+  --target=aws_security_group_rule.eks_nodes_ingress_webhook_9443 \
+  --target=aws_security_group_rule.eks_nodes_ingress_webhook_8443 \
+  --target=aws_security_group_rule.eks_nodes_ingress_dns_tcp \
+  --target=aws_security_group_rule.eks_nodes_ingress_dns_udp
 ```
+
+cat ~/.aws/credentials
+aws eks update-kubeconfig --region ap-northeast-2 --name jskwon-eks-project
 
 ---
 
@@ -82,7 +80,26 @@ terraform apply --auto-approve \
 
 ---
 
-### ✅ 5단계: 전체 인프라 상태 확인 (선택 사항)
+### ✅ 5단계: GitLab 설치
+```bash
+terraform apply --refresh=false --auto-approve \
+  --target kubernetes_namespace.gitlab \
+  --target helm_release.gitlab
+```
+### ✅ 6단계: Bastion 인프라 상태 확인 (선택 사항)
+
+terraform apply --auto-approve \
+
+```bash
+terraform apply --auto-approve \
+  --target=aws_security_group.jskwon_bastion_sg \
+  --target=aws_instance.jskwon_bastion_ec2 \
+  --target=aws_key_pair.jskwon \
+  --target=local_file.private_key \
+  --target=random_password.vscode_password \
+  --target=tls_private_key.jskwon_key
+
+### ✅ 6단계: 전체 인프라 상태 확인 (선택 사항)
 
 모든 단계가 완료된 후, 전체 인프라의 상태를 확인합니다.
 

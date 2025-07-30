@@ -21,18 +21,18 @@ resource "aws_security_group_rule" "eks_nodes_egress_all" {
   description       = "Allow all outbound traffic for nodes to pull images and communicate with AWS APIs."
 }
 
-# Ingress Rule: Allow all traffic between nodes
+# Ingress Rule: Allow all traffic within the security group (node-to-node)
 resource "aws_security_group_rule" "eks_nodes_ingress_self" {
   type              = "ingress"
   from_port         = 0
-  to_port           = 0
+  to_port           = 65535
   protocol          = "-1"
   self              = true
   security_group_id = aws_security_group.eks_nodes_sg.id
-  description       = "Allow nodes to communicate with each other."
+  description       = "Allow all traffic between nodes in the same security group"
 }
 
-
+# Ingress Rule: Allow EKS control plane to nodes
 resource "aws_security_group_rule" "eks_nodes_ingress_cluster_https" {
   type                     = "ingress"
   from_port                = 443
@@ -40,18 +40,40 @@ resource "aws_security_group_rule" "eks_nodes_ingress_cluster_https" {
   protocol                 = "tcp"
   source_security_group_id = module.eks.cluster_security_group_id
   security_group_id        = aws_security_group.eks_nodes_sg.id
-  description              = "Allow EKS control plane to communicate with node webhooks (e.g., ALB/NLB webhook)."
+  description              = "Allow EKS control plane to communicate with nodes on port 443"
 }
 
-# 명시적 추가 제안
-resource "aws_security_group_rule" "eks_nodes_ingress_webhook_443" {
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  self              = true
-  security_group_id = aws_security_group.eks_nodes_sg.id
-  description       = "Allow node-to-node webhook traffic over 443"
+# Ingress Rule: Allow EKS control plane to nodes for webhooks
+resource "aws_security_group_rule" "eks_nodes_ingress_webhook_8443" {
+  type                     = "ingress"
+  from_port                = 8443
+  to_port                  = 8443
+  protocol                 = "tcp"
+  source_security_group_id = module.eks.cluster_security_group_id
+  security_group_id        = aws_security_group.eks_nodes_sg.id
+  description              = "Allow EKS control plane to communicate with nodes on port 8443 (webhooks)"
+}
+
+# Ingress Rule: Allow EKS control plane to nodes for webhooks
+resource "aws_security_group_rule" "eks_nodes_ingress_webhook_9443" {
+  type                     = "ingress"
+  from_port                = 9443
+  to_port                  = 9443
+  protocol                 = "tcp"
+  source_security_group_id = module.eks.cluster_security_group_id
+  security_group_id        = aws_security_group.eks_nodes_sg.id
+  description              = "Allow EKS control plane to communicate with nodes on port 9443 (webhooks)"
+}
+
+# Ingress Rule: Allow Kubelet API from cluster to nodes
+resource "aws_security_group_rule" "eks_nodes_ingress_kubelet" {
+  type                     = "ingress"
+  from_port                = 10250
+  to_port                  = 10250
+  protocol                 = "tcp"
+  source_security_group_id = module.eks.cluster_security_group_id
+  security_group_id        = aws_security_group.eks_nodes_sg.id
+  description              = "Allow EKS control plane to communicate with Kubelet API on port 10250"
 }
 
 # Ingress Rule: Allow Kubelet API from cluster to nodes
@@ -75,6 +97,27 @@ resource "aws_security_group_rule" "eks_nodes_ingress_bastion_ssh" {
   security_group_id        = aws_security_group.eks_nodes_sg.id
   source_security_group_id = aws_security_group.jskwon_bastion_sg.id
   description              = "Allow SSH access from bastion host."
+}
+
+# CoreDNS를 위한 DNS 포트
+resource "aws_security_group_rule" "eks_nodes_ingress_dns_tcp" {
+  type                     = "ingress"
+  from_port                = 53
+  to_port                  = 53
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.eks_nodes_sg.id
+  source_security_group_id = module.eks.cluster_security_group_id
+  description              = "Allow DNS (TCP) from control plane"
+}
+
+resource "aws_security_group_rule" "eks_nodes_ingress_dns_udp" {
+  type                     = "ingress"
+  from_port                = 53
+  to_port                  = 53
+  protocol                 = "udp"
+  security_group_id        = aws_security_group.eks_nodes_sg.id
+  source_security_group_id = module.eks.cluster_security_group_id
+  description              = "Allow DNS (UDP) from control plane"
 }
 
 # Ingress Rule: Allow all traffic from nodes to cluster
@@ -130,9 +173,4 @@ resource "aws_security_group" "jskwon_bastion_sg" {
   tags = {
     Name = "jskwon-bastion-sg"
   }
-}
-
-resource "aws_iam_role_policy_attachment" "eks_admin_access" {
-  role       = aws_iam_role.eks_admin_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: app1
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: app1
@@ -24,8 +24,7 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
-      nodeSelector:
-        karpenter.sh/capacity-type: on-demand
+
 
 ---
 apiVersion: v1

@@ -29,9 +29,9 @@ module "eks" {
   eks_managed_node_groups = {
     default = {
       instance_types = ["t3.small"]
-      min_size       = 1
-      max_size       = 2
-      desired_size   = 1
+      min_size       = 2
+      max_size       = 3
+      desired_size   = 2
       vpc_security_group_ids = [aws_security_group.eks_nodes_sg.id]
     }
   }
@@ -72,7 +72,7 @@ resource "aws_eks_addon" "this" {
   resolve_conflicts_on_update = "OVERWRITE"
 
   timeouts {
-    create = "2m"
+    create = "5m"
   }
 }
 
